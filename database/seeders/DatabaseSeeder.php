@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         $cartoons = [
-            ['cartoon_name' => 'Shoun The Sheep', 'Does not contain elements of violence' => 4, 'Creative' => 4, 'Educating' => 5, 'Entertain' => 4, 'No Pornographic Elements' => 4, 'cartoon_img' => 'images/ShounTheSheep.jpg'],
+            ['cartoon_name' => 'Shaun The Sheep', 'Does not contain elements of violence' => 4, 'Creative' => 4, 'Educating' => 5, 'Entertain' => 4, 'No Pornographic Elements' => 4, 'cartoon_img' => 'images/ShaunTheSheep.jpg'],
             ['cartoon_name' => 'Upin dan Ipin', 'Does not contain elements of violence' => 4, 'Creative' => 4, 'Educating' => 4, 'Entertain' => 5, 'No Pornographic Elements' => 4, 'cartoon_img' => 'images/UpindanIpin.jpg'],
             ['cartoon_name' => 'Shiva', 'Does not contain elements of violence' => 2, 'Creative' => 4, 'Educating' => 4, 'Entertain' => 3, 'No Pornographic Elements' => 4, 'cartoon_img' => 'images/Shiva.jpg'],
             ['cartoon_name' => 'Nussa', 'Does not contain elements of violence' => 4, 'Creative' => 5, 'Educating' => 4, 'Entertain' => 4, 'No Pornographic Elements' => 4, 'cartoon_img' => 'images/Nussa.jpg'],
