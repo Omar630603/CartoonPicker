@@ -59,8 +59,8 @@
                         <thead>
                             <tr class="table-dark">
                                 <th>#Criteria</th>
-                                @foreach ($criterias as $criteria)
-                                <th>{{$criteria->criteria_name}}</th>
+                                @foreach ($criteria as $c)
+                                <th>{{$c->criteria_name}}</th>
                                 @endforeach
                             </tr>
                         </thead>
@@ -68,11 +68,11 @@
                             <tr>
                                 <td>#Choose value</td>
 
-                                @foreach ($criterias as $criteria)
+                                @foreach ($criteria as $c)
                                 <td>
                                     @foreach ($criteria_indicators as $criteria_indicator)
                                     <div>
-                                        <input type="radio" name="criteria_indicator{{$criteria->criteria_id}}"
+                                        <input type="radio" name="criteria_indicator{{$c->criteria_id}}"
                                             value={{$criteria_indicator->criteria_indicator_value}}>
                                         {{$criteria_indicator->criteria_indicator_name}}
                                     </div>

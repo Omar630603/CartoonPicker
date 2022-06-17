@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Criteria extends Model
 {
     use HasFactory;
-    protected $table = 'criterias';
+    protected $table = 'criteria';
     protected $primaryKey = 'criteria_id';
     /**
      * The attributes that are mass assignable.

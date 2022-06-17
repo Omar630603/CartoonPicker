@@ -14,8 +14,8 @@ class CartoonController extends Controller
     {
         $cartoons = Cartoon::get(['cartoon_id', 'cartoon_name', 'cartoon_img']);
         $criteria_indicators = CriteriaIndicator::all();
-        $criterias = Criteria::all();
-        return view('welcome', compact('cartoons', 'criteria_indicators', 'criterias'));
+        $criteria = Criteria::all();
+        return view('welcome', compact('cartoons', 'criteria_indicators', 'criteria'));
     }
     function results($ranked)
     {
@@ -25,9 +25,9 @@ class CartoonController extends Controller
             ->get(['cartoon_id', 'cartoon_name', 'cartoon_img']);
         $cartoons = Cartoon::get(['cartoon_id', 'cartoon_name', 'cartoon_img']);
         $criteria_indicators = CriteriaIndicator::all();
-        $criterias = Criteria::all();
+        $criteria = Criteria::all();
         Session::flash('success', $results[0]->cartoon_name . ' is the highest-ranking among all your choices');
-        return view('welcome', compact('cartoons', 'criteria_indicators', 'criterias', 'results'));
+        return view('welcome', compact('cartoons', 'criteria_indicators', 'criteria', 'results'));
     }
     public function process(Request $request)
     {
@@ -35,25 +35,25 @@ class CartoonController extends Controller
             if (count($request->cartoons) < 2) {
                 return redirect()->back()->with('error', 'Please select at least 2 cartoons');
             } else {
-                $criterias = Criteria::all();
-                for ($i = 1; $i <= count($criterias); $i++) {
+                $criteria = Criteria::all();
+                for ($i = 1; $i <= count($criteria); $i++) {
                     if (!$request->has('criteria_indicator' . $i)) {
-                        return redirect()->back()->with('error', 'Please select the weghit of cretira ' . $criterias[$i - 1]->criteria_name);
+                        return redirect()->back()->with('error', 'Please select the weight of criteria ' . $criteria[$i - 1]->criteria_name);
                     }
                 }
-                // start working on moora method
+                // start working on Multi-Objective Optimization Method by Ratio Analysis method
                 $cartoons = $request->cartoons;
                 $weights = array();
-                for ($i = 1; $i <= count($criterias); $i++) {
-                    $weights[$criterias[$i - 1]->criteria_name] = $request->{'criteria_indicator' . $i};
+                for ($i = 1; $i <= count($criteria); $i++) {
+                    $weights[$criteria[$i - 1]->criteria_name] = $request->{'criteria_indicator' . $i};
                 }
-                // noramlize
-                $noramlized = $this->normalize($criterias, $cartoons);
-                // normalized * weights
-                $weighted = $this->weighted($criterias, $cartoons, $noramlized, $weights);
-                // sum of weighted and get final result
-                $finalResult = $this->minMax($criterias, $cartoons, $weighted);
-                //send to results
+                // Normalize
+                $normalized = $this->normalize($criteria, $cartoons);
+                // Normalized * weights
+                $weighted = $this->weighted($criteria, $cartoons, $normalized, $weights);
+                // Sum of weighted and get final result
+                $finalResult = $this->minMax($criteria, $cartoons, $weighted);
+                // Send to results
                 $ranked = array_keys($finalResult);
 
                 return $this->results($ranked);
@@ -62,39 +62,39 @@ class CartoonController extends Controller
             return redirect()->back()->with('error', 'Please select at least 2 cartoons');
         }
     }
-    public function normalize($criterias, $cartoons)
+    public function normalize($criteria, $cartoons)
     {
         $scores = array();
-        for ($j = 1; $j <= count($criterias); $j++) {
+        for ($j = 1; $j <= count($criteria); $j++) {
             for ($i = 0; $i < count($cartoons); $i++) {
                 $a = Cartoon::where('cartoon_id', $cartoons[$i])->first();
-                $value = pow($a->{$criterias[$j - 1]->criteria_name}, 2);
-                $scores[$cartoons[$i]][$criterias[$j - 1]->criteria_name] = $value;
+                $value = pow($a->{$criteria[$j - 1]->criteria_name}, 2);
+                $scores[$cartoons[$i]][$criteria[$j - 1]->criteria_name] = $value;
             }
         }
 
-        for ($j = 1; $j <= count($criterias); $j++) {
-            $value = array_sum(array_column($scores, $criterias[$j - 1]->criteria_name));
+        for ($j = 1; $j <= count($criteria); $j++) {
+            $value = array_sum(array_column($scores, $criteria[$j - 1]->criteria_name));
             $value = sqrt($value);
             for ($i = 0; $i < count($cartoons); $i++) {
                 $a = Cartoon::where('cartoon_id', $cartoons[$i])->first();
-                $scores[$cartoons[$i]][$criterias[$j - 1]->criteria_name] = $a->{$criterias[$j - 1]->criteria_name} / $value;
+                $scores[$cartoons[$i]][$criteria[$j - 1]->criteria_name] = $a->{$criteria[$j - 1]->criteria_name} / $value;
             }
         }
         return $scores;
     }
-    public function weighted($criterias, $cartoons, $noramlized, $weights)
+    public function weighted($criteria, $cartoons, $normalized, $weights)
     {
-        $scores = $noramlized;
-        for ($j = 1; $j <= count($criterias); $j++) {
+        $scores = $normalized;
+        for ($j = 1; $j <= count($criteria); $j++) {
             for ($i = 0; $i < count($cartoons); $i++) {
-                $value = $scores[$cartoons[$i]][$criterias[$j - 1]->criteria_name] * $weights[$criterias[$j - 1]->criteria_name];
-                $scores[$cartoons[$i]][$criterias[$j - 1]->criteria_name] = $value;
+                $value = $scores[$cartoons[$i]][$criteria[$j - 1]->criteria_name] * $weights[$criteria[$j - 1]->criteria_name];
+                $scores[$cartoons[$i]][$criteria[$j - 1]->criteria_name] = $value;
             }
         }
         return $scores;
     }
-    public function minMax($criterias, $cartoons, $weighted)
+    public function minMax($criteria, $cartoons, $weighted)
     {
         $scores = $weighted;
         $max = array();
@@ -103,11 +103,11 @@ class CartoonController extends Controller
         for ($i = 0; $i < count($cartoons); $i++) {
             $valueMax = 0;
             $valueMin = 0;
-            for ($j = 1; $j <= count($criterias); $j++) {
-                if ($criterias[$j - 1]->criteria_type == 'benefit') {
-                    $valueMax +=  $scores[$cartoons[$i]][$criterias[$j - 1]->criteria_name];
-                } else if ($criterias[$j - 1]->criteria_type == 'cost') {
-                    $valueMin +=  $scores[$cartoons[$i]][$criterias[$j - 1]->criteria_name];
+            for ($j = 1; $j <= count($criteria); $j++) {
+                if ($criteria[$j - 1]->criteria_type == 'benefit') {
+                    $valueMax +=  $scores[$cartoons[$i]][$criteria[$j - 1]->criteria_name];
+                } else if ($criteria[$j - 1]->criteria_type == 'cost') {
+                    $valueMin +=  $scores[$cartoons[$i]][$criteria[$j - 1]->criteria_name];
                 }
             }
             $max[$cartoons[$i]] = $valueMax;
