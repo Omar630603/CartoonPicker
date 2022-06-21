@@ -17,6 +17,7 @@ class CreateCriteriaTable extends Migration
             $table->id('criteria_id');
             $table->string('criteria_name');
             $table->string('criteria_type');
+            $table->timestamps();
         });
     }
 

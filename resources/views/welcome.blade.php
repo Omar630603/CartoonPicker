@@ -6,6 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <title>CartoonPicker</title>
+        <script src="{{ asset('js/app.js') }}" defer></script>
 
         <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
         <!-- Styles -->
@@ -16,6 +17,8 @@
         <!-- Fonts -->
         <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 
+        <link href="{{ asset('css/custom.css') }}" rel="stylesheet">
+        <script src="{{ asset('js/app.js') }}" defer></script>
         <link href="{{ asset('css/app.css') }}" rel="stylesheet">
     </head>
 
@@ -47,8 +50,8 @@
                 @csrf
                 <div class="cartoons">
                     @foreach ($cartoons as $cartoon)
-                    <div class="cartoon">
-                        <input type="checkbox" name="cartoons[]" value="{{$cartoon->cartoon_id}}">
+                    <div class="cartoon" id="cartoon{{$cartoon->cartoon_id}}" onclick="changeBorder(this)">
+                        <input hidden type="checkbox" name="cartoons[]" value="{{$cartoon->cartoon_id}}">
                         <p>{{$cartoon->cartoon_name}}</p>
                         <img src="{{ asset('storage/'. $cartoon->cartoon_img) }}" alt="">
                     </div>
@@ -67,7 +70,6 @@
                         <tbody>
                             <tr>
                                 <td>#Choose value</td>
-
                                 @foreach ($criteria as $c)
                                 <td>
                                     @foreach ($criteria_indicators as $criteria_indicator)
@@ -93,24 +95,36 @@
             @php
             $ind = 0;
             @endphp
-            @foreach ($results as $result)
-            @php
-            $ind++;
-            @endphp
-            <div class="result">
-                <script>
-                    var section = document.getElementById("pickerId");
+            <div class="cartoonResults">
+                @foreach ($results as $result)
+                @php
+                $ind++;
+                @endphp
+                <div class="result">
+                    <script>
+                        var section = document.getElementById("pickerId");
                     section.style.display = "none";
-                </script>
-                <h1>#{{$ind}}. </h1>
-                <div class="cartoon">
-                    <p>{{$result->cartoon_name}}</p>
-                    <img src="{{ asset('storage/'. $result->cartoon_img) }}" alt="">
+                    </script>
+                    <h1># @if($ind < 10) 0{{$ind}}. @else {{$ind}}. @endif</h1>
+                            <div class="cartoon">
+                                <p>{{$result->cartoon_name}}</p>
+                                <img src="{{ asset('storage/'. $result->cartoon_img) }}" alt="">
+                            </div>
                 </div>
+                @endforeach
             </div>
-            @endforeach
         </div>
         @endisset
+        <script>
+            function changeBorder(input){
+                input.firstElementChild.checked = !input.firstElementChild.checked;
+                if (input.firstElementChild.checked) {
+                    input.className = "cartoon-active";
+                } else {
+                    input.className = "cartoon";
+                }
+            }
+        </script>
     </body>
 
 </html>

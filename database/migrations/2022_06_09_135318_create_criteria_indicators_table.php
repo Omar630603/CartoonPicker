@@ -17,6 +17,7 @@ class CreateCriteriaIndicatorsTable extends Migration
             $table->id('criteria_indicator_id');
             $table->string('criteria_indicator_name');
             $table->double('criteria_indicator_value');
+            $table->timestamps();
         });
     }
 

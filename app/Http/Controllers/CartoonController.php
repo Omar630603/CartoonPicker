@@ -7,6 +7,9 @@ use App\Models\Criteria;
 use App\Models\CriteriaIndicator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class CartoonController extends Controller
 {
@@ -36,16 +39,16 @@ class CartoonController extends Controller
                 return redirect()->back()->with('error', 'Please select at least 2 cartoons');
             } else {
                 $criteria = Criteria::all();
-                for ($i = 1; $i <= count($criteria); $i++) {
-                    if (!$request->has('criteria_indicator' . $i)) {
-                        return redirect()->back()->with('error', 'Please select the weight of criteria ' . $criteria[$i - 1]->criteria_name);
+                foreach ($criteria as $criterion) {
+                    if (!$request->has('criteria_indicator' . $criterion->criteria_id)) {
+                        return redirect()->back()->with('error', 'Please select the weight of criteria ' . $criterion->criteria_name);
                     }
                 }
                 // start working on Multi-Objective Optimization Method by Ratio Analysis method
                 $cartoons = $request->cartoons;
                 $weights = array();
-                for ($i = 1; $i <= count($criteria); $i++) {
-                    $weights[$criteria[$i - 1]->criteria_name] = $request->{'criteria_indicator' . $i};
+                foreach ($criteria as $criterion) {
+                    $weights[$criterion->criteria_name] = $request->{'criteria_indicator' . $criterion->criteria_id};
                 }
                 // Normalize
                 $normalized = $this->normalize($criteria, $cartoons);
@@ -65,20 +68,17 @@ class CartoonController extends Controller
     public function normalize($criteria, $cartoons)
     {
         $scores = array();
-        for ($j = 1; $j <= count($criteria); $j++) {
-            for ($i = 0; $i < count($cartoons); $i++) {
-                $a = Cartoon::where('cartoon_id', $cartoons[$i])->first();
-                $value = pow($a->{$criteria[$j - 1]->criteria_name}, 2);
-                $scores[$cartoons[$i]][$criteria[$j - 1]->criteria_name] = $value;
+        foreach ($criteria as $criterion) {
+            foreach ($cartoons as $cartoon) {
+                $a = Cartoon::where('cartoon_id', $cartoon)->first();
+                $value = pow($a->{$criterion->criteria_name}, 2);
+                $scores[$cartoon][$criterion->criteria_name] = $value;
             }
-        }
-
-        for ($j = 1; $j <= count($criteria); $j++) {
-            $value = array_sum(array_column($scores, $criteria[$j - 1]->criteria_name));
+            $value = array_sum(array_column($scores, $criterion->criteria_name));
             $value = sqrt($value);
-            for ($i = 0; $i < count($cartoons); $i++) {
-                $a = Cartoon::where('cartoon_id', $cartoons[$i])->first();
-                $scores[$cartoons[$i]][$criteria[$j - 1]->criteria_name] = $a->{$criteria[$j - 1]->criteria_name} / $value;
+            foreach ($cartoons as $cartoon) {
+                $a = Cartoon::where('cartoon_id', $cartoon)->first();
+                $scores[$cartoon][$criterion->criteria_name] = $a->{$criterion->criteria_name} / $value;
             }
         }
         return $scores;
@@ -86,10 +86,10 @@ class CartoonController extends Controller
     public function weighted($criteria, $cartoons, $normalized, $weights)
     {
         $scores = $normalized;
-        for ($j = 1; $j <= count($criteria); $j++) {
-            for ($i = 0; $i < count($cartoons); $i++) {
-                $value = $scores[$cartoons[$i]][$criteria[$j - 1]->criteria_name] * $weights[$criteria[$j - 1]->criteria_name];
-                $scores[$cartoons[$i]][$criteria[$j - 1]->criteria_name] = $value;
+        foreach ($criteria as $criterion) {
+            foreach ($cartoons as $cartoon) {
+                $value = $scores[$cartoon][$criterion->criteria_name] * $weights[$criterion->criteria_name];
+                $scores[$cartoon][$criterion->criteria_name] = $value;
             }
         }
         return $scores;
@@ -99,28 +99,28 @@ class CartoonController extends Controller
         $scores = $weighted;
         $max = array();
         $min = array();
-
-        for ($i = 0; $i < count($cartoons); $i++) {
+        foreach ($cartoons as $cartoon) {
             $valueMax = 0;
             $valueMin = 0;
-            for ($j = 1; $j <= count($criteria); $j++) {
-                if ($criteria[$j - 1]->criteria_type == 'benefit') {
-                    $valueMax +=  $scores[$cartoons[$i]][$criteria[$j - 1]->criteria_name];
-                } else if ($criteria[$j - 1]->criteria_type == 'cost') {
-                    $valueMin +=  $scores[$cartoons[$i]][$criteria[$j - 1]->criteria_name];
+            foreach ($criteria as $criterion) {
+                if ($criterion->criteria_type == 'benefit') {
+                    $valueMax +=  $scores[$cartoon][$criterion->criteria_name];
+                } else if ($criterion->criteria_type == 'cost') {
+                    $valueMin +=  $scores[$cartoon][$criterion->criteria_name];
                 }
             }
-            $max[$cartoons[$i]] = $valueMax;
-            $min[$cartoons[$i]] = $valueMin;
+            $max[$cartoon] = $valueMax;
+            $min[$cartoon] = $valueMin;
         }
+
         return $this->ranking($cartoons, $max, $min);
     }
     public function ranking($cartoons, $max, $min)
     {
         $ranking = array();
-        for ($i = 0; $i < count($cartoons); $i++) {
-            $value = $max[$cartoons[$i]] - $min[$cartoons[$i]];
-            $ranking[$cartoons[$i]] = $value;
+        foreach ($cartoons as $cartoon) {
+            $value = $max[$cartoon] - $min[$cartoon];
+            $ranking[$cartoon] = $value;
         }
         return $this->sort($ranking);
     }
@@ -128,5 +128,138 @@ class CartoonController extends Controller
     {
         arsort($ranking, SORT_NUMERIC);
         return $ranking;
+    }
+    public function editDataCartoon(Cartoon $cartoon, Request $request)
+    {
+        $oldName = $cartoon->cartoon_name;
+        $cartoon->cartoon_name = $request->cartoon_name;
+        $cartoon->save();
+        Session::flash('success', 'Cartoon ' . $oldName . ' has been renamed to ' . $cartoon->cartoon_name);
+        return redirect()->back();
+    }
+    public function deleteCartoon(Cartoon $cartoon)
+    {
+        Storage::delete('public/' . $cartoon->cartoon_img);
+        $cartoon->delete();
+        Session::flash('success', 'Cartoon ' . $cartoon->cartoon_name . ' has been deleted');
+        return redirect()->back();
+    }
+    public function addCartoon(Request $request)
+    {
+        if ($request->cartoonName == '') {
+            return redirect()->back()->with('error', 'Please enter a name for the cartoon');
+        }
+        if ($request->file('cartoonImg')) {
+            $filename = $request->file('cartoonImg')->store('images', 'public');
+        } else {
+            $filename = 'images/noImage.jpg';
+        }
+        $cartoon = new Cartoon();
+        $cartoon->cartoon_name = $request->cartoonName;
+        $cartoon->cartoon_img = $filename;
+        $cartoon->save();
+        Session::flash('success', 'Cartoon ' . $cartoon->cartoonName . ' has been added');
+        return redirect()->back();
+    }
+    public function editCartoonImage(Cartoon $cartoon, Request $request)
+    {
+        if ($request->file('cartoonImg')) {
+            $filename = $request->file('cartoonImg')->store('images', 'public');
+            Storage::delete('public/' . $cartoon->cartoon_img);
+            $cartoon->cartoon_img = $filename;
+            $cartoon->save();
+            Session::flash('success', 'Cartoon ' . $cartoon->cartoon_name . ' has been updated');
+        } else {
+            Session::flash('error', 'Please select an image');
+        }
+        return redirect()->back();
+    }
+    public function deleteSelectedCartoon(Request $request)
+    {
+        if ($request->has('cartoons')) {
+            $cartoons = $request->cartoons;
+            foreach ($cartoons as $cartoon) {
+                $cartoon = Cartoon::where('cartoon_id', $cartoon)->first();
+                Storage::delete('public/' . $cartoon->cartoon_img);
+                $cartoon->delete();
+            }
+            return redirect()->back()->with('success', 'Deleted all (' . count($cartoons) . ') data successfully');
+        } else {
+            return redirect()->back()->with('error', 'Please select at least one cartoon');
+        }
+    }
+
+    public function addCriteria(Request $request)
+    {
+        if ($request->criteriaName == '') {
+            return redirect()->back()->with('error', 'Please enter a name for the criteria');
+        }
+        Schema::table('cartoons', function (Blueprint $table) use ($request) {
+            $table->double($request->criteriaName)->default(0);
+        });
+        $criteria = new Criteria();
+        $criteria->criteria_name = $request->criteriaName;
+        $criteria->criteria_type = $request->criteriaType;
+        $criteria->save();
+        Session::flash('success', 'Criteria ' . $criteria->criteria_name . ' has been added');
+        return redirect()->back();
+    }
+    public function editCriteria(Criteria $criteria, Request $request)
+    {
+        if ($request->criteriaName == '') {
+            return redirect()->back()->with('error', 'Please enter a name for the criteria');
+        }
+        Schema::table('cartoons', function (Blueprint $table) use ($request, $criteria) {
+            $table->renameColumn("[$criteria->criteria_name]", "[$request->criteriaName]");
+        });
+        $criteria->criteria_name = $request->criteriaName;
+        $criteria->criteria_type = $request->criteriaType;
+        $criteria->save();
+        Session::flash('success', 'Criteria ' . $criteria->criteria_name . ' has been updated');
+        return redirect()->back();
+    }
+    public function deleteCriteria(Criteria $criteria)
+    {
+        Schema::table('cartoons', function (Blueprint $table) use ($criteria) {
+            $table->dropColumn($criteria->criteria_name);
+        });
+        $criteria->delete();
+        Session::flash('success', 'Criteria ' . $criteria->criteria_name . ' has been deleted');
+        return redirect()->back();
+    }
+    public function addCriteriaIndicator(Request $request)
+    {
+        if ($request->criteriaIndicatorName == '') {
+            return redirect()->back()->with('error', 'Please enter a name for the criteria indicator');
+        }
+        if ($request->criteriaIndicatorValue == '') {
+            return redirect()->back()->with('error', 'Please enter a value for the criteria indicator');
+        }
+        $criteriaIndicator = new CriteriaIndicator();
+        $criteriaIndicator->criteria_indicator_name = $request->criteriaIndicatorName;
+        $criteriaIndicator->criteria_indicator_value = $request->criteriaIndicatorValue;
+        $criteriaIndicator->save();
+        Session::flash('success', 'Criteria indicator ' . $criteriaIndicator->criteria_indicator_name . ' has been added');
+        return redirect()->back();
+    }
+    public function editCriteriaIndicator(CriteriaIndicator $criteriaIndicator, Request $request)
+    {
+        if ($request->criteriaIndicatorName == '') {
+            return redirect()->back()->with('error', 'Please enter a name for the criteria indicator');
+        }
+        if ($request->criteriaIndicatorValue == '') {
+            return redirect()->back()->with('error', 'Please enter a value for the criteria indicator');
+        }
+        $criteriaIndicator->criteria_indicator_name = $request->criteriaIndicatorName;
+        $criteriaIndicator->criteria_indicator_value = $request->criteriaIndicatorValue;
+        $criteriaIndicator->save();
+        Session::flash('success', 'Criteria indicator ' . $criteriaIndicator->criteria_indicator_name . ' has been updated');
+        return redirect()->back();
+    }
+    public function deleteCriteriaIndicator(CriteriaIndicator $criteriaIndicator)
+    {
+        $criteriaIndicator->delete();
+        Session::flash('success', 'Criteria indicator ' . $criteriaIndicator->criteria_indicator_name . ' has been deleted');
+        return redirect()->back();
     }
 }

@@ -5,7 +5,9 @@ namespace Database\Seeders;
 use App\Models\Cartoon;
 use App\Models\Criteria;
 use App\Models\CriteriaIndicator;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -16,6 +18,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
+        $users = [
+            ['name' => 'Admin', 'email' => 'admin@admin.com', 'username' => 'admin', 'password' => Hash::make('123456789')],
+        ];
+        User::insert($users);
         $cartoons = [
             ['cartoon_name' => 'Shaun The Sheep', 'Does not contain elements of violence' => 4, 'Creative' => 4, 'Educating' => 5, 'Entertain' => 4, 'No Pornographic Elements' => 4, 'cartoon_img' => 'images/ShaunTheSheep.jpg'],
             ['cartoon_name' => 'Upin dan Ipin', 'Does not contain elements of violence' => 4, 'Creative' => 4, 'Educating' => 4, 'Entertain' => 5, 'No Pornographic Elements' => 4, 'cartoon_img' => 'images/UpindanIpin.jpg'],
@@ -23,7 +29,7 @@ class DatabaseSeeder extends Seeder
             ['cartoon_name' => 'Nussa', 'Does not contain elements of violence' => 4, 'Creative' => 5, 'Educating' => 4, 'Entertain' => 4, 'No Pornographic Elements' => 4, 'cartoon_img' => 'images/Nussa.jpg'],
             ['cartoon_name' => 'Doraemon', 'Does not contain elements of violence' => 3, 'Creative' => 4, 'Educating' => 5, 'Entertain' => 4, 'No Pornographic Elements' => 5, 'cartoon_img' => 'images/Doraemon.jpg'],
             ['cartoon_name' => 'Sopo Jarwo', 'Does not contain elements of violence' => 4, 'Creative' => 4, 'Educating' => 4, 'Entertain' => 4, 'No Pornographic Elements' => 4, 'cartoon_img' => 'images/SopoJarwo.jpg'],
-            ['cartoon_name' => 'Tom And Jerry', 'Does not contain elements of violence' => 2, 'Creative' => 4, 'Educating' => 3, 'Entertain' => 3, 'No Pornographic Elements' => 4, 'cartoon_img' => 'images/TomAndJerry.jpg'],
+            ['cartoon_name' => 'Tom And Jerry', 'Does not contain elements of violence' => 2, 'Creative' => 4, 'Educating' => 5, 'Entertain' => 3, 'No Pornographic Elements' => 4, 'cartoon_img' => 'images/TomAndJerry.jpg'],
             ['cartoon_name' => 'Ben Ten', 'Does not contain elements of violence' => 2, 'Creative' => 4, 'Educating' => 5, 'Entertain' => 3, 'No Pornographic Elements' => 4, 'cartoon_img' => 'images/BenTen.jpg'],
             ['cartoon_name' => 'The Amazing World of Gum Ball', 'Does not contain elements of violence' => 4, 'Creative' => 4, 'Educating' => 4, 'Entertain' => 5, 'No Pornographic Elements' => 4, 'cartoon_img' => 'images/TheAmazingWorldofGumBall.jpg'],
             ['cartoon_name' => 'Masha And The Bear', 'Does not contain elements of violence' => 3, 'Creative' => 4, 'Educating' => 4, 'Entertain' => 3, 'No Pornographic Elements' => 4, 'cartoon_img' => 'images/MashaAndTheBear.jpg'],

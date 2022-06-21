@@ -16,12 +16,13 @@ class CreateCartoonsTable extends Migration
         Schema::create('cartoons', function (Blueprint $table) {
             $table->id('cartoon_id');
             $table->string('cartoon_name');
-            $table->integer('Does not contain elements of violence');
-            $table->integer('Creative');
-            $table->integer('Educating');
-            $table->integer('Entertain');
-            $table->integer('No Pornographic Elements');
-            $table->string('cartoon_img');
+            $table->double('Does not contain elements of violence')->default(0);
+            $table->double('Creative')->default(0);
+            $table->double('Educating')->default(0);
+            $table->double('Entertain')->default(0);
+            $table->double('No Pornographic Elements')->default(0);
+            $table->string('cartoon_img')->default('images/noImage.jpg');
+            $table->timestamps();
         });
     }
 
