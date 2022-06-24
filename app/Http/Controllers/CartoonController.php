@@ -20,7 +20,7 @@ class CartoonController extends Controller
         $criteria = Criteria::all();
         return view('welcome', compact('cartoons', 'criteria_indicators', 'criteria'));
     }
-    function results($ranked)
+    function results($ranked, $normalized, $weighted, $minMax, $finalResult, $weights)
     {
         $ids = implode(',', $ranked);
         $results = Cartoon::whereIntegerInRaw('cartoon_id', $ranked)
@@ -30,7 +30,18 @@ class CartoonController extends Controller
         $criteria_indicators = CriteriaIndicator::all();
         $criteria = Criteria::all();
         Session::flash('success', $results[0]->cartoon_name . ' is the highest-ranking among all your choices');
-        return view('welcome', compact('cartoons', 'criteria_indicators', 'criteria', 'results'));
+        return view('welcome', compact(
+            'cartoons',
+            'criteria_indicators',
+            'criteria',
+            'results',
+            'normalized',
+            'weighted',
+            'minMax',
+            'finalResult',
+            'ranked',
+            'weights'
+        ));
     }
     public function process(Request $request)
     {
@@ -55,11 +66,13 @@ class CartoonController extends Controller
                 // Normalized * weights
                 $weighted = $this->weighted($criteria, $cartoons, $normalized, $weights);
                 // Sum of weighted and get final result
-                $finalResult = $this->minMax($criteria, $cartoons, $weighted);
+                $minMax = $this->minMax($criteria, $cartoons, $weighted);
+                // Rank the results
+                $finalResult = $this->ranking($cartoons, $minMax);
                 // Send to results
                 $ranked = array_keys($finalResult);
 
-                return $this->results($ranked);
+                return $this->results($ranked, $normalized, $weighted, $minMax, $finalResult, $weights);
             }
         } else {
             return redirect()->back()->with('error', 'Please select at least 2 cartoons');
@@ -97,8 +110,7 @@ class CartoonController extends Controller
     public function minMax($criteria, $cartoons, $weighted)
     {
         $scores = $weighted;
-        $max = array();
-        $min = array();
+        $results = array();
         foreach ($cartoons as $cartoon) {
             $valueMax = 0;
             $valueMin = 0;
@@ -109,17 +121,16 @@ class CartoonController extends Controller
                     $valueMin +=  $scores[$cartoon][$criterion->criteria_name];
                 }
             }
-            $max[$cartoon] = $valueMax;
-            $min[$cartoon] = $valueMin;
+            $results[$cartoon]['max'] = $valueMax;
+            $results[$cartoon]['min'] = $valueMin;
         }
-
-        return $this->ranking($cartoons, $max, $min);
+        return $results;
     }
-    public function ranking($cartoons, $max, $min)
+    public function ranking($cartoons, $results)
     {
         $ranking = array();
         foreach ($cartoons as $cartoon) {
-            $value = $max[$cartoon] - $min[$cartoon];
+            $value = $results[$cartoon]['max'] - $results[$cartoon]['min'];
             $ranking[$cartoon] = $value;
         }
         return $this->sort($ranking);

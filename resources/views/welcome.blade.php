@@ -114,6 +114,165 @@
                 @endforeach
             </div>
         </div>
+        @auth
+        <div class="container">
+            <table class="table">
+                <thead>
+                    <tr align="center">
+                        <th>Criteria</th>
+                        @foreach ($weights as $key => $value)
+                        @foreach ($criteria_indicators as $criteria_indicator)
+                        @if ($value == $criteria_indicator->criteria_indicator_value)
+                        <th>{{$key}}
+                            <br>
+                            <small>({{$criteria_indicator->criteria_indicator_name}})</small>
+                        </th>
+                        @endif
+                        @endforeach
+                        @endforeach
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr align="center">
+                        <th>Weight</th>
+                        @foreach ($weights as $key => $value)
+                        <th>{{$value}}</th>
+                        @endforeach
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="container">
+            @php
+            $ind = 0;
+            @endphp
+            <h1>Normalized Matrix</h1>
+            <table class="table">
+                <thead>
+                    <tr align="center">
+                        <th>NO</th>
+                        <th>Alternative</th>
+                        @foreach ($criteria as $c)
+                        <th>{{$c->criteria_name}}@if ($c->criteria_type == 'cost') - @else + @endif</th>
+                        @endforeach
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($cartoons as $cartoon)
+                    @foreach ($normalized as $key => $value)
+                    @if ($cartoon->cartoon_id == $key)
+                    @php $ind++; @endphp
+                    <tr align="center">
+                        <td># @if($ind < 10) 0{{$ind}}. @else {{$ind}}. @endif</td>
+                        <td>{{$cartoon->cartoon_name}}</td>
+                        @foreach ($criteria as $c)
+                        <td>{{$value[$c->criteria_name]}}</td>
+                        @endforeach
+                    </tr>
+                    @endif
+                    @endforeach
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        <div class="container">
+            @php
+            $ind = 0;
+            @endphp
+            <h1>Weighted Matrix</h1>
+            <table class="table">
+                <thead>
+                    <tr align="center">
+                        <th>NO</th>
+                        <th>Alternative</th>
+                        @foreach ($criteria as $c)
+                        <th>{{$c->criteria_name}}@if ($c->criteria_type == 'cost') - @else + @endif</th>
+                        @endforeach
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($cartoons as $cartoon)
+                    @foreach ($weighted as $key => $value)
+                    @if ($cartoon->cartoon_id == $key)
+                    @php $ind++; @endphp
+                    <tr align="center">
+                        <td># @if($ind < 10) 0{{$ind}}. @else {{$ind}}. @endif</td>
+                        <td>{{$cartoon->cartoon_name}}</td>
+                        @foreach ($criteria as $c)
+                        <td>{{$value[$c->criteria_name]}}</td>
+                        @endforeach
+                    </tr>
+                    @endif
+                    @endforeach
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        <div class="container">
+            <div class="d-flex flex-wrap justify-content-between">
+                <div>
+                    @php
+                    $ind = 0;
+                    @endphp
+                    <h1>Max Min Matrix</h1>
+                    <table class="table">
+                        <thead>
+                            <tr align="center">
+                                <th>NO</th>
+                                <th>Alternative</th>
+                                <th>Max</th>
+                                <th>Min</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($cartoons as $cartoon)
+                            @foreach ($minMax as $key => $value)
+                            @if ($cartoon->cartoon_id == $key)
+                            @php $ind++; @endphp
+                            <tr align="center">
+                                <td># @if($ind < 10) 0{{$ind}}. @else {{$ind}}. @endif</td>
+                                <td>{{$cartoon->cartoon_name}}</td>
+                                <td>{{$value['max']}}</td>
+                                <td>{{$value['min']}}</td>
+                            </tr>
+                            @endif
+                            @endforeach
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <h1>Final Ranking Matrix</h1>
+                    <table class="table">
+                        <thead>
+                            <tr align="center">
+                                <th>Rank</th>
+                                <th>Alternative</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($ranked as $key1 => $value1)
+                            @foreach ($cartoons as $cartoon )
+                            @if ($cartoon->cartoon_id == $value1)
+                            <tr align="center">
+                                <td>{{$key1 + 1}}</td>
+                                <td>{{$cartoon->cartoon_name}}</td>
+                                @foreach ($finalResult as $key => $value)
+                                @if ($cartoon->cartoon_id == $key)
+                                <td>{{$value}}</td>
+                                @endif
+                                @endforeach
+                            </tr>
+                            @endif
+                            @endforeach
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        @endauth
         @endisset
         <script>
             function changeBorder(input){
